@@ -1,8 +1,30 @@
 'use server'; //mark all the exported functions within the file as Server Actions.
+
+import { signIn } from '@/auth';
+import { AuthError } from 'next-auth';
 import { z } from 'zod'; //a TypeScript-first validation library
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache'; // we are updating the data displayed in the invoices route, so we want to clear this cache and trigger a new server request.
 import { redirect } from 'next/navigation';
+
+export async function authenticate(
+  prevState: string | undefined,
+  formData: FormData,
+) {
+  try {
+    await signIn('credentials', formData);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case 'CredentialsSignin':
+          return 'Invalid credentials.';
+        default:
+          return 'Something went wrong.';
+      }
+    }
+    throw error;
+  }
+}
 
 const FormSchema = z.object({
     id: z.string(),
